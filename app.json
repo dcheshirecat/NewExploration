@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Dini's Money Jar",
+    "slug": "dinis-money-jar",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#24134D"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#8A6CF0"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.diniadini101.dinismoneyjar",
+      "versionCode": 2,
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "2a5c1f83-bc23-4577-a1ac-cc819b049078"
+      }
+    },
+    "owner": "diniadini101",
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#7c7cff"
+        }
+      ]
+    ]
+  }
+}
