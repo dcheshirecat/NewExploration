@@ -8,7 +8,6 @@ import {
   PET_ACTIONS, petType, RARITY_COLORS, rollPet, SHOP_ITEMS, skipCost, spend, xpForNext, type PetType,
 } from '../game';
 import { confirmAction, useStore } from '../store';
-import { PIXEL_FONT } from '../theme';
 import type { Pet } from '../types';
 import { clamp, fmt, shortDate, uid } from '../utils';
 
@@ -22,7 +21,7 @@ export function PetsScreen({ tab, setTab }: { tab: PetsTab; setTab: (t: PetsTab)
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.card, borderRadius: 20, padding: 14, borderWidth: 1, borderColor: theme.border }}>
         <View>
           <Text style={{ color: theme.textSoft, fontWeight: '700', fontSize: 12 }}>YOUR COINS</Text>
-          <Text style={{ color: theme.text, fontFamily: PIXEL_FONT, fontSize: 30 }}>🪙 {g.coins.toLocaleString()}</Text>
+          <Text style={{ color: theme.text, fontWeight: '900', fontSize: 30 }}>🪙 {g.coins.toLocaleString()}</Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
           <Text style={{ color: theme.textSoft, fontSize: 12, fontWeight: '700' }}>🔥 {g.streak.count}-day streak</Text>
@@ -143,7 +142,7 @@ function PetModal({ pet, onClose }: { pet: Pet | null; onClose: () => void }) {
                   <Btn label="Save" onPress={saveName} />
                 </Row>
               ) : (
-                <Pressable onPress={() => setRenaming(true)}><Text style={{ color: theme.text, fontSize: 28, fontFamily: PIXEL_FONT }}>{pet.name} ✏️</Text></Pressable>
+                <Pressable onPress={() => setRenaming(true)}><Text style={{ color: theme.text, fontSize: 28, fontWeight: '900' }}>{pet.name} ✏️</Text></Pressable>
               )}
               <Text style={{ color: RARITY_COLORS[t.rarity], fontWeight: '800' }}>Level {pet.level} · {t.element} · {t.rarity}</Text>
               <Text style={{ color: theme.textFaint, fontSize: 12 }}>{t.name} · hatched {shortDate(pet.hatchedAt)}</Text>
@@ -305,7 +304,7 @@ function HatchReveal({ reveal, onClose }: { reveal: { type: PetType; name: strin
           <>
             <Confetti />
             <Animated.View style={{ transform: [{ scale: pop }] }}><PetArt typeId={reveal.type.id} size={180} moving /></Animated.View>
-            <Text style={{ color: '#ffe08a', fontSize: 32, fontFamily: PIXEL_FONT }}>New pet!</Text>
+            <Text style={{ color: '#ffe08a', fontSize: 32, fontWeight: '900' }}>New pet!</Text>
             <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>{reveal.name}</Text>
             <Text style={{ color: RARITY_COLORS[reveal.type.rarity], fontWeight: '800' }}>{reveal.type.rarity} · {reveal.type.element}</Text>
             <Btn kind="gold" label="Add to family!" onPress={onClose} style={{ marginTop: 10, paddingHorizontal: 28 }} />
@@ -407,7 +406,7 @@ function Wallet() {
               <Text style={{ color: theme.text, fontWeight: '700' }} numberOfLines={1}>{tx.reason}</Text>
               <Text style={{ color: theme.textFaint, fontSize: 12 }}>{shortDate(tx.date)}</Text>
             </View>
-            <Text style={{ color: tx.type === 'earn' ? theme.good : theme.bad, fontFamily: PIXEL_FONT, fontSize: 16 }}>{tx.type === 'earn' ? '+' : '−'}{tx.amount}</Text>
+            <Text style={{ color: tx.type === 'earn' ? theme.good : theme.bad, fontWeight: '900', fontSize: 16 }}>{tx.type === 'earn' ? '+' : '−'}{tx.amount}</Text>
           </Row>
         ))}
       </Card>

@@ -68,6 +68,8 @@ export type Settings = {
   warnAt: number;
   /** real bank balance the forecast starts from */
   bank?: BankBalance;
+  /** savings you already had before using the app */
+  savingsBase?: number;
 };
 
 // ── Game ──────────────────────────────────────────────────────────────────────

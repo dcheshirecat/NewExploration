@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 import { useTheme } from '../store';
-import { PIXEL_FONT, type Theme } from '../theme';
+import type { Theme } from '../theme';
 
 export function useStyles<T extends StyleSheet.NamedStyles<T>>(factory: (t: Theme) => T): T {
   const t = useTheme();
@@ -10,7 +10,7 @@ export function useStyles<T extends StyleSheet.NamedStyles<T>>(factory: (t: Them
 
 const base = (t: Theme) => ({
   card: { backgroundColor: t.card, borderRadius: 24, padding: 18, gap: 12, borderWidth: t.dark ? 1 : 0, borderColor: t.border, shadowColor: '#3b1d7a', shadowOpacity: t.dark ? 0 : 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: t.dark ? 0 : 2 },
-  title: { color: t.text, fontSize: 21, fontFamily: PIXEL_FONT, letterSpacing: 0.3 },
+  title: { color: t.text, fontSize: 21, fontWeight: '800' as const },
   heading: { color: t.text, fontSize: 16, fontWeight: '800' as const },
   sub: { color: t.textSoft, fontSize: 14, lineHeight: 20 },
   input: { minWidth: 0, flexShrink: 1, backgroundColor: t.input, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 13, color: t.text, fontSize: 16 },

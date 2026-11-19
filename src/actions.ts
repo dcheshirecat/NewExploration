@@ -263,3 +263,33 @@ export function forecast(d: AppData, endDate: string): Forecast {
 }
 
 export function endOfCurrentPeriod() { return toLocalDateStr(periodBounds(getMonthKey()).end); }
+
+// ── Total savings ────────────────────────────────────────────────────────────
+export type SavingsSummary = {
+  total: number;
+  before: number;
+  setAside: number;
+  inGoals: number;
+  /** per period, oldest first, only periods with savings activity */
+  byPeriod: { mk: string; setAside: number; goals: number; total: number }[];
+};
+
+/** Everything saved up to today: earlier savings + monthly set-asides (up to this period) + goal deposits. */
+export function totalSavings(d: AppData): SavingsSummary {
+  const cur = getMonthKey();
+  const per: Record<string, { setAside: number; goals: number }> = {};
+  for (const [mk, m] of Object.entries(d.months)) {
+    if (mk > cur || !m.savingsEnabled || !m.savingsSetAside) continue;
+    (per[mk] ??= { setAside: 0, goals: 0 }).setAside += m.savingsSetAside;
+  }
+  for (const g of d.goals) for (const c of g.contributions) {
+    const mk = getMonthKey(new Date(c.createdAt));
+    (per[mk] ??= { setAside: 0, goals: 0 }).goals += c.amount;
+  }
+  const byPeriod = Object.entries(per).sort(([a], [b]) => a.localeCompare(b))
+    .map(([mk, v]) => ({ mk, ...v, total: v.setAside + v.goals }));
+  const setAside = sum(byPeriod, p => p.setAside);
+  const inGoals = sum(byPeriod, p => p.goals);
+  const before = d.settings.savingsBase ?? 0;
+  return { total: before + setAside + inGoals, before, setAside, inGoals, byPeriod };
+}

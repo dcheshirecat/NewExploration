@@ -6,8 +6,6 @@ export type SectionKey = 'home' | 'budget' | 'insights' | 'goals' | 'pets' | 'se
 /** accent = pastel fill (buttons, hero) · ink = text on accent · strong = saturated (highlights, progress) · soft = tinted inputs/chips · bg = page background */
 export type Section = { accent: string; ink: string; strong: string; soft: string; bg: string };
 
-export const PIXEL_FONT = 'PixelifySans_700Bold';
-
 const LIGHT_SECTIONS: Record<SectionKey, Section> = {
   home:     { accent: '#ffcfb3', ink: '#6b2e10', strong: '#e2683a', soft: '#fff1e8', bg: '#fff8f3' },
   budget:   { accent: '#b8edd2', ink: '#0f5132', strong: '#1f9e67', soft: '#e9f9f0', bg: '#f4fcf8' },

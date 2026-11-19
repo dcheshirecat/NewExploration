@@ -5,7 +5,6 @@ import { remindersSupported, exportBackup, pickBackup, syncReminder } from '../s
 import { confirmAction, useStore } from '../store';
 import type { ThemeMode } from '../types';
 import { pad } from '../utils';
-import { PIXEL_FONT } from '../theme';
 
 const HOURS = [8, 12, 18, 20, 21, 22];
 
@@ -52,7 +51,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
   return (
     <View style={{ gap: 14 }}>
       <Row style={{ justifyContent: 'space-between' }}>
-        <Text style={{ color: theme.text, fontSize: 28, fontFamily: PIXEL_FONT }}>Settings</Text>
+        <Text style={{ color: theme.text, fontSize: 28, fontWeight: '900' }}>Settings</Text>
         <Btn small kind="secondary" label="Done" onPress={onClose} />
       </Row>
 

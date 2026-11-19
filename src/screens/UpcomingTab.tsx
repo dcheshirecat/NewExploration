@@ -6,7 +6,6 @@ import { Banner, Btn, Card, Chip, Empty, Heading, Input, Row, Segmented, SmallLi
 import { coinsForLog } from '../game';
 import { INCOME_SOURCES } from '../storage';
 import { confirmAction, useStore } from '../store';
-import { PIXEL_FONT } from '../theme';
 import type { RecurringKind } from '../types';
 import { fmt, parseAmount, toLocalDateStr, todayStr } from '../utils';
 
@@ -31,7 +30,7 @@ export function BankBalanceCard() {
       <Title>🏦 Balance now</Title>
       {bank && est !== null ? (
         <>
-          <Text style={{ fontFamily: PIXEL_FONT, fontSize: 40, color: est >= 0 ? theme.good : theme.bad }}>{fmt(est)}</Text>
+          <Text style={{ fontWeight: '900', fontSize: 40, color: est >= 0 ? theme.good : theme.bad }}>{fmt(est)}</Text>
           <Sub>You entered {fmt(bank.amount)} on {new Date(bank.asOf).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}. Everything you&apos;ve logged since then is included.</Sub>
         </>
       ) : <Sub>Type in how much money is in your bank account right now. The app adds and subtracts everything you log from here, and uses it to show your future balance.</Sub>}
@@ -60,11 +59,11 @@ export function ProjectionSummary({ compact, onOpen }: { compact?: boolean; onOp
       <Row style={{ alignItems: 'stretch' }}>
         <View style={{ flex: 1, backgroundColor: theme.statBlue, borderRadius: 18, padding: 14, gap: 4 }}>
           <Text style={{ color: theme.statText, fontWeight: '700', fontSize: 13 }}>Balance now</Text>
-          <Text style={{ color: theme.statText, fontFamily: PIXEL_FONT, fontSize: 22 }} adjustsFontSizeToFit numberOfLines={1}>{fmt(f.now)}</Text>
+          <Text style={{ color: theme.statText, fontWeight: '900', fontSize: 22 }} adjustsFontSizeToFit numberOfLines={1}>{fmt(f.now)}</Text>
         </View>
         <View style={{ flex: 1, backgroundColor: f.end >= 0 ? theme.statGreen : theme.statPink, borderRadius: 18, padding: 14, gap: 4 }}>
           <Text style={{ color: theme.statText, fontWeight: '700', fontSize: 13 }}>Projected {niceDate(end).replace(/^\w+, /, '')}</Text>
-          <Text style={{ color: theme.statText, fontFamily: PIXEL_FONT, fontSize: 22 }} adjustsFontSizeToFit numberOfLines={1}>{fmt(f.end)}</Text>
+          <Text style={{ color: theme.statText, fontWeight: '900', fontSize: 22 }} adjustsFontSizeToFit numberOfLines={1}>{fmt(f.end)}</Text>
         </View>
       </Row>
       {next && <Text style={{ color: theme.textSoft, fontWeight: '600' }}>Next charge: <Text style={{ color: theme.text, fontWeight: '800' }}>{next.label} {fmt(-next.amount)}</Text> on {niceDate(next.date)} → {fmt(next.balance)}</Text>}
@@ -116,7 +115,7 @@ export function UpcomingTab() {
           <View key={e.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.cardAlt, borderRadius: 16, padding: 12 }}>
             <View style={{ width: 46, alignItems: 'center' }}>
               <Text style={{ color: theme.textSoft, fontSize: 11, fontWeight: '800' }}>{new Date(e.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}</Text>
-              <Text style={{ color: theme.text, fontFamily: PIXEL_FONT, fontSize: 22 }}>{Number(e.date.slice(8))}</Text>
+              <Text style={{ color: theme.text, fontWeight: '900', fontSize: 22 }}>{Number(e.date.slice(8))}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ color: theme.text, fontWeight: '800' }} numberOfLines={1}>{e.label}</Text>

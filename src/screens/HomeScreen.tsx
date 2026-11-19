@@ -9,8 +9,8 @@ import { Banner, Btn, Card, Progress, Row, Segmented, Stat, Sub, Title } from '.
 import { earn, getMood, todaysChallenge } from '../game';
 import { emptyMonth } from '../storage';
 import { useStore } from '../store';
-import { PIXEL_FONT } from '../theme';
 import { ProjectionSummary } from './UpcomingTab';
+import { SavingsCard } from '../components/SavingsCard';
 import { daysLeftInPeriod, fmt, getMonthKey, getPeriodLabel, sum, todayStr } from '../utils';
 
 export type Nav = (tab: 'home' | 'budget' | 'insights' | 'goals' | 'pets', sub?: string) => void;
@@ -60,7 +60,7 @@ export function HomeScreen({ go }: { go: Nav }) {
         <View style={{ position: 'absolute', right: 70, bottom: -50, width: 110, height: 110, borderRadius: 999, backgroundColor: theme.sections.budget.accent, opacity: 0.9 }} />
         <View style={{ position: 'absolute', right: -20, bottom: 20, width: 60, height: 60, borderRadius: 999, backgroundColor: theme.sections.insights.accent, opacity: 0.95 }} />
         <Text style={{ color: theme.btnText, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12, opacity: 0.8 }}>{hello}, Dini</Text>
-        <Text style={{ color: theme.btnText, fontSize: 26, fontFamily: PIXEL_FONT, lineHeight: 32 }}>{m.funBudget > 0 ? `${fmt(Math.max(funLeft, 0))} left to have fun with` : 'Set your fun budget to get started ✨'}</Text>
+        <Text style={{ color: theme.btnText, fontSize: 26, fontWeight: '900', lineHeight: 32 }}>{m.funBudget > 0 ? `${fmt(Math.max(funLeft, 0))} left to have fun with` : 'Set your fun budget to get started ✨'}</Text>
         <Text style={{ color: theme.btnText, fontWeight: '600', opacity: 0.85 }}>{getPeriodLabel(mk)} · {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left</Text>
         <Row style={{ marginTop: 8, gap: 8, flexWrap: 'wrap' }}>
           <Pill text={`🪙 ${data.game.coins}`} onPress={() => go('pets', 'wallet')} />
@@ -74,6 +74,8 @@ export function HomeScreen({ go }: { go: Nav }) {
       ))}
 
       <ProjectionSummary compact onOpen={() => go('budget', 'upcoming')} />
+
+      <SavingsCard compact onOpen={() => go('goals')} />
 
       <Card>
         <Title>Quick add</Title>

@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { contributeToGoal, goalSaved } from '../actions';
 import { DatePicker } from '../components/DatePicker';
+import { SavingsCard } from '../components/SavingsCard';
 import { Btn, Card, Chip, Empty, Heading, Input, Progress, Row, SmallLink, Stat, Sub, Title, Wrap } from '../components/ui';
 import { coinsForSaving } from '../game';
 import { GOAL_COLORS } from '../storage';
 import { confirmAction, useStore } from '../store';
-import { PIXEL_FONT } from '../theme';
 import type { Goal } from '../types';
 import { fmt, parseAmount, shortDate, sum, todayStr, uid } from '../utils';
 
@@ -22,6 +22,7 @@ export function GoalsScreen() {
 
   return (
     <View style={{ gap: 14 }}>
+      <SavingsCard />
       <Card>
         <Title>Savings goals 🎯</Title>
         <Sub>Save toward the things you want. Every shekel you add earns coins 🪙 and XP for your pets.</Sub>
@@ -142,7 +143,7 @@ function GoalCard({ goal }: { goal: Goal }) {
           <Text style={{ color: theme.text, fontSize: 18, fontWeight: '800' }} numberOfLines={1}>{goal.name}</Text>
           <Text style={{ color: theme.textSoft }}>{fmt(saved)} of {fmt(goal.target)}</Text>
         </View>
-        <Text style={{ color: theme.text, fontSize: 22, fontFamily: PIXEL_FONT }}>{Math.min(100, Math.round(ratio * 100))}%</Text>
+        <Text style={{ color: theme.text, fontSize: 22, fontWeight: '900' }}>{Math.min(100, Math.round(ratio * 100))}%</Text>
       </Row>
       <Progress value={ratio} color={goal.color} height={14} />
       {goal.completedAt ? <Sub>🎉 Reached on {shortDate(goal.completedAt)}!</Sub> : <Sub>{fmt(left)} to go{pace ? ` · ${pace}` : ''}</Sub>}
