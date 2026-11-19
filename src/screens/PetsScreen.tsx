@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { EggArt, PetArt } from '../components/PetArt';
+import { EggArt } from '../components/PetArt';
+import { PetArt } from '../components/PetSprite';
 import { Btn, Card, Empty, Heading, Input, Progress, Row, Segmented, Stat, Sub, Title } from '../components/ui';
 import {
-  applyItem, checkLevelUp, coinsForResisting, coinsForSaving, COINS, EGG_TYPES, getMood, hatchProgress, MAX_INCUBATING, MAX_PETS,
-  PET_ACTIONS, petType, RARITY_COLORS, resistanceLevel, rollPet, SHOP_ITEMS, skipCost, spend, xpForNext, type PetType,
+  applyItem, checkLevelUp, coinsForLog, coinsForSaving, COINS, EGG_TYPES, getMood, hatchProgress, MAX_INCUBATING, MAX_PETS,
+  PET_ACTIONS, petType, RARITY_COLORS, rollPet, SHOP_ITEMS, skipCost, spend, xpForNext, type PetType,
 } from '../game';
 import { confirmAction, useStore } from '../store';
+import { PIXEL_FONT } from '../theme';
 import type { Pet } from '../types';
 import { clamp, fmt, shortDate, uid } from '../utils';
 
@@ -20,7 +22,7 @@ export function PetsScreen({ tab, setTab }: { tab: PetsTab; setTab: (t: PetsTab)
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.card, borderRadius: 20, padding: 14, borderWidth: 1, borderColor: theme.border }}>
         <View>
           <Text style={{ color: theme.textSoft, fontWeight: '700', fontSize: 12 }}>YOUR COINS</Text>
-          <Text style={{ color: theme.text, fontWeight: '900', fontSize: 28 }}>🪙 {g.coins.toLocaleString()}</Text>
+          <Text style={{ color: theme.text, fontFamily: PIXEL_FONT, fontSize: 30 }}>🪙 {g.coins.toLocaleString()}</Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
           <Text style={{ color: theme.textSoft, fontSize: 12, fontWeight: '700' }}>🔥 {g.streak.count}-day streak</Text>
@@ -61,7 +63,7 @@ function MyPets({ goHatch }: { goHatch: () => void }) {
             const mood = getMood(p);
             return (
               <Pressable key={p.id} onPress={() => setOpenId(p.id)} style={{ width: '48%', flexGrow: 1, backgroundColor: theme.cardAlt, borderRadius: 18, padding: 12, alignItems: 'center', gap: 4, borderWidth: 2, borderColor: mood === 'sad' ? theme.bad : 'transparent' }}>
-                <PetArt typeId={p.typeId} level={p.level} mood={mood} size={84} />
+                <PetArt typeId={p.typeId} level={p.level} mood={mood} size={96} />
                 <Text style={{ color: theme.text, fontWeight: '800' }} numberOfLines={1}>{p.name}</Text>
                 <Text style={{ color: RARITY_COLORS[t.rarity], fontWeight: '800', fontSize: 12 }}>Lv.{p.level} · {t.rarity}</Text>
                 <Text style={{ color: theme.textSoft, fontSize: 12 }}>{mood === 'happy' ? '😊 happy' : mood === 'ok' ? '😐 okay' : '😢 needs care'}</Text>
@@ -93,13 +95,14 @@ function PetModal({ pet, onClose }: { pet: Pet | null; onClose: () => void }) {
   const { data, update, theme } = useStore();
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState('');
+  const [react, setReact] = useState(0);
   useEffect(() => { setRenaming(false); setName(pet?.name ?? ''); }, [pet?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!pet) return null;
   const t = petType(pet.typeId);
   const mood = getMood(pet);
   const inv = Object.entries(data.game.inventory).filter(([, n]) => n > 0);
 
-  const act = (kind: keyof typeof PET_ACTIONS) => update(d => {
+  const act = (kind: keyof typeof PET_ACTIONS) => { if (data.game.coins >= PET_ACTIONS[kind].cost) setReact(r => r + 1); update(d => {
     const p = d.game.pets.find(x => x.id === pet.id); if (!p) return;
     const { cost } = PET_ACTIONS[kind];
     if (!spend(d.game, cost, `${PET_ACTIONS[kind].label} ${p.name}`)) return `Not enough coins (need ${cost} 🪙)`;
@@ -108,14 +111,14 @@ function PetModal({ pet, onClose }: { pet: Pet | null; onClose: () => void }) {
     if (kind === 'heal') { p.health = clamp(p.health + 40, 0, 100); p.xp += 10; }
     const up = checkLevelUp(d.game, p);
     return [kind === 'feed' ? `Yum! ${p.name} is fed 🍓` : kind === 'play' ? `${p.name} had a blast! 🎾` : `${p.name} feels much better 💖`, ...(up ? [up] : [])];
-  });
-  const useItem = (itemId: string) => update(d => {
+  }); };
+  const useItem = (itemId: string) => { setReact(r => r + 1); update(d => {
     const p = d.game.pets.find(x => x.id === pet.id); const item = SHOP_ITEMS.find(i => i.id === itemId);
     if (!p || !item || !(d.game.inventory[itemId] > 0)) return;
     d.game.inventory[itemId] -= 1;
     const up = applyItem(d.game, p, item);
     return [`Used ${item.emoji} ${item.name} on ${p.name}`, ...(up ? [up] : [])];
-  });
+  }); };
   const saveName = () => {
     if (!name.trim()) return;
     update(d => { const p = d.game.pets.find(x => x.id === pet.id); if (p) p.name = name.trim().slice(0, 20); });
@@ -133,14 +136,14 @@ function PetModal({ pet, onClose }: { pet: Pet | null; onClose: () => void }) {
           <ScrollView contentContainerStyle={{ padding: 20, gap: 12 }}>
             <View style={{ alignSelf: 'center', width: 40, height: 5, borderRadius: 999, backgroundColor: theme.border }} />
             <View style={{ alignItems: 'center' }}>
-              <PetArt typeId={pet.typeId} level={pet.level} mood={mood} size={150} />
+              <Pressable onPress={() => setReact(r => r + 1)}><PetArt typeId={pet.typeId} level={pet.level} mood={mood} size={160} reactKey={react} /></Pressable>
               {renaming ? (
                 <Row style={{ marginTop: 6 }}>
                   <Input style={{ flex: 1 }} value={name} onChangeText={setName} placeholder="Pet name" autoFocus />
                   <Btn label="Save" onPress={saveName} />
                 </Row>
               ) : (
-                <Pressable onPress={() => setRenaming(true)}><Text style={{ color: theme.text, fontSize: 26, fontWeight: '900' }}>{pet.name} ✏️</Text></Pressable>
+                <Pressable onPress={() => setRenaming(true)}><Text style={{ color: theme.text, fontSize: 28, fontFamily: PIXEL_FONT }}>{pet.name} ✏️</Text></Pressable>
               )}
               <Text style={{ color: RARITY_COLORS[t.rarity], fontWeight: '800' }}>Level {pet.level} · {t.element} · {t.rarity}</Text>
               <Text style={{ color: theme.textFaint, fontSize: 12 }}>{t.name} · hatched {shortDate(pet.hatchedAt)}</Text>
@@ -158,7 +161,7 @@ function PetModal({ pet, onClose }: { pet: Pet | null; onClose: () => void }) {
                 {inv.map(([id, n]) => { const it = SHOP_ITEMS.find(i => i.id === id); if (!it) return null; return <Btn key={id} small kind="secondary" label={`${it.emoji} ${it.name} ×${n}`} onPress={() => useItem(id)} />; })}
               </View>
             </>}
-            <Sub>Your coins: 🪙 {data.game.coins}. Pets also gain XP whenever you save toward a goal or skip a purchase.</Sub>
+            <Sub>Your coins: 🪙 {data.game.coins}. Pets gain XP every time you log something or save toward a goal. Tap your pet to say hi!</Sub>
             <Row>
               <Btn style={{ flex: 1 }} kind="secondary" label="Close" onPress={onClose} />
               <Btn kind="danger" label="Release" onPress={release} />
@@ -301,8 +304,8 @@ function HatchReveal({ reveal, onClose }: { reveal: { type: PetType; name: strin
         ) : (
           <>
             <Confetti />
-            <Animated.View style={{ transform: [{ scale: pop }] }}><PetArt typeId={reveal.type.id} size={170} /></Animated.View>
-            <Text style={{ color: '#a29bfe', fontSize: 28, fontWeight: '900' }}>New pet!</Text>
+            <Animated.View style={{ transform: [{ scale: pop }] }}><PetArt typeId={reveal.type.id} size={180} moving /></Animated.View>
+            <Text style={{ color: '#ffe08a', fontSize: 32, fontFamily: PIXEL_FONT }}>New pet!</Text>
             <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>{reveal.name}</Text>
             <Text style={{ color: RARITY_COLORS[reveal.type.rarity], fontWeight: '800' }}>{reveal.type.rarity} · {reveal.type.element}</Text>
             <Btn kind="gold" label="Add to family!" onPress={onClose} style={{ marginTop: 10, paddingHorizontal: 28 }} />
@@ -367,12 +370,10 @@ function Shop() {
 function Wallet() {
   const { data, theme } = useStore();
   const g = data.game;
-  const r = resistanceLevel(g.resistanceXP);
   const ways = [
-    ['📝', 'Log an expense or income', `+${COINS.perLog} (up to ${COINS.maxLogRewardsPerDay}×/day)`],
+    ['📝', 'Log an expense, income or upcoming item', `+${coinsForLog(0)} to +60 (₪50 → ${coinsForLog(50)}, ₪500 → ${coinsForLog(500)})`],
     ['🔥', 'Log something every day', 'streak bonus up to +35'],
-    ['🎯', 'Save toward a goal', `+1 per ₪1 (e.g. ₪100 → ${coinsForSaving(100)})`],
-    ['💪', 'Skip a purchase', `+2 per ₪1 (e.g. ₪50 → ${coinsForResisting(50)})`],
+    ['🎯', 'Save toward a goal', `+1 per ₪1 (₪100 → ${coinsForSaving(100)})`],
     ['⭐', 'Complete the daily challenge', '+25 to +120'],
     ['🏆', 'Finish a period under your fun budget', '+100 or more'],
     ['🎉', 'Reach a savings goal', `+${COINS.goalCompleted}`],
@@ -381,19 +382,11 @@ function Wallet() {
     <>
       <Card>
         <Row><Stat tone="yellow" label="Coins now" value={`🪙 ${g.coins}`} /><Stat tone="purple" label="Coins earned total" value={`${g.totalEarned}`} /></Row>
-        <Row><Stat tone="green" label="Money not spent" value={fmt(g.totalResisted)} /><Stat tone="pink" label="Best streak" value={`🔥 ${g.streak.best} ${g.streak.best === 1 ? 'day' : 'days'}`} /></Row>
-      </Card>
-      <Card>
-        <Title>Spending resistance</Title>
-        <Sub>Grows every time you skip a purchase.</Sub>
-        <Row style={{ justifyContent: 'space-between' }}>
-          <Text style={{ color: theme.primary, fontSize: 40, fontWeight: '900' }}>{r.score}</Text>
-          <Text style={{ color: theme.textSoft, fontWeight: '800' }}>Level {r.level}</Text>
-        </Row>
-        <Progress value={r.progress} color={theme.primary} height={12} />
+        <Row><Stat tone="green" label="Entries logged" value={`📝 ${g.totalLogged}`} /><Stat tone="pink" label="Best streak" value={`🔥 ${g.streak.best} ${g.streak.best === 1 ? 'day' : 'days'}`} /></Row>
       </Card>
       <Card>
         <Title>How to earn coins</Title>
+        <Sub>Every time you log something you earn coins: 5, plus 1 for every ₪50. Your pets also get {COINS.logXp} XP.</Sub>
         {ways.map(([icon, what, amount]) => (
           <Row key={what}>
             <Text style={{ fontSize: 22, width: 30 }}>{icon}</Text>
@@ -414,7 +407,7 @@ function Wallet() {
               <Text style={{ color: theme.text, fontWeight: '700' }} numberOfLines={1}>{tx.reason}</Text>
               <Text style={{ color: theme.textFaint, fontSize: 12 }}>{shortDate(tx.date)}</Text>
             </View>
-            <Text style={{ color: tx.type === 'earn' ? theme.good : theme.bad, fontWeight: '900' }}>{tx.type === 'earn' ? '+' : '−'}{tx.amount}</Text>
+            <Text style={{ color: tx.type === 'earn' ? theme.good : theme.bad, fontFamily: PIXEL_FONT, fontSize: 16 }}>{tx.type === 'earn' ? '+' : '−'}{tx.amount}</Text>
           </Row>
         ))}
       </Card>

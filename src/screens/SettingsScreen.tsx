@@ -5,6 +5,7 @@ import { remindersSupported, exportBackup, pickBackup, syncReminder } from '../s
 import { confirmAction, useStore } from '../store';
 import type { ThemeMode } from '../types';
 import { pad } from '../utils';
+import { PIXEL_FONT } from '../theme';
 
 const HOURS = [8, 12, 18, 20, 21, 22];
 
@@ -51,7 +52,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
   return (
     <View style={{ gap: 14 }}>
       <Row style={{ justifyContent: 'space-between' }}>
-        <Text style={{ color: theme.text, fontSize: 26, fontWeight: '900' }}>Settings</Text>
+        <Text style={{ color: theme.text, fontSize: 28, fontFamily: PIXEL_FONT }}>Settings</Text>
         <Btn small kind="secondary" label="Done" onPress={onClose} />
       </Row>
 
@@ -90,7 +91,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
 
       <Card>
         <Title>Backup & restore</Title>
-        <Sub>Save everything (budgets, goals, recurring items, pets) to a file. Keep it in Google Drive or send it to yourself, so you never lose your data — even if you change phones.</Sub>
+        <Sub>Save everything (budgets, goals, recurring and upcoming items, bank balance, pets) to a file. Keep it in Google Drive or send it to yourself, so you never lose your data — even if you change phones.</Sub>
         <Btn icon="💾" label={busy ? 'Preparing…' : 'Back up to a file'} onPress={doExport} disabled={busy} />
         <Btn icon="📂" kind="secondary" label="Restore from a backup file" onPress={doImport} />
       </Card>

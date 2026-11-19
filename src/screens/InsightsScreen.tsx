@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, Share, Text, View } from 'react-native';
-import { goalContributionsInPeriod } from '../actions';
+import { forecast, goalContributionsInPeriod } from '../actions';
 import { DailyBars, Donut, Legend, MonthCompare, type MonthPoint } from '../components/Charts';
 import { MonthPicker } from '../components/forms';
 import { Btn, Card, Empty, Heading, ListRow, Row, Segmented, Stat, Sub, SummaryRow, Title } from '../components/ui';
@@ -68,8 +68,8 @@ function ChartsTab({ selKey }: { selKey: string }) {
       <Card>
         <Title>Quick insights</Title>
         <Row>
-          <Stat tone="purple" label="Spent this period" value={fmt(curSpent)} />
-          <Stat tone="yellow" label="6-month average" value={fmt(avg)} />
+          <Stat tone="blue" label="Spent this period" value={fmt(curSpent)} />
+          <Stat tone="peach" label="6-month average" value={fmt(avg)} />
         </Row>
         {change !== null && (
           <SummaryRow label={`vs ${getMonthLabel(prev.key)}`} value={`${change > 0 ? '▲' : '▼'} ${Math.abs(Math.round(change * 100))}%`} tone={change > 0 ? 'bad' : 'good'} />
@@ -103,6 +103,14 @@ function DailyTab({ selKey }: { selKey: string }) {
     return out;
   }, [selKey, m]);
   const max = Math.max(1, ...days.map(d => d.fun + d.reg));
+  const today = toLocalDateStr(new Date());
+  const periodEnd = days[days.length - 1].dateStr;
+  const upcoming = useMemo(() => (periodEnd > today ? forecast(data, periodEnd).events.filter(e => e.date >= days[0].dateStr) : []), [data, periodEnd, today, days]);
+  const upcomingByDay = useMemo(() => {
+    const m: Record<string, { out: number; inc: number }> = {};
+    upcoming.forEach(e => { const x = (m[e.date] ??= { out: 0, inc: 0 }); if (e.amount < 0) x.out += -e.amount; else x.inc += e.amount; });
+    return m;
+  }, [upcoming]);
   const noSpend = days.filter(d => d.dateStr <= toLocalDateStr(new Date()) && d.fun + d.reg === 0).length;
 
   const cells: (typeof days[0] | null)[] = [];
@@ -123,6 +131,7 @@ function DailyTab({ selKey }: { selKey: string }) {
         <Title>Daily spending calendar</Title>
         <Sub>{getPeriodLabel(selKey)} · darker = more spent. Tap a day.</Sub>
         <Legend items={[{ label: 'Spent', color: theme.primary }, { label: 'No-spend day', color: theme.cardAlt }]} />
+        {upcoming.length > 0 && <Text style={{ color: theme.textSoft, fontSize: 13, fontWeight: '600' }}>⬚ Dashed days have upcoming charges (red) or income (green).</Text>}
         <View style={{ flexDirection: 'row' }}>
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <Text key={d} style={{ flex: 1, textAlign: 'center', color: theme.textFaint, fontSize: 11, fontWeight: '700' }}>{d}</Text>)}
         </View>
@@ -133,11 +142,15 @@ function DailyTab({ selKey }: { selKey: string }) {
               const total = d.fun + d.reg;
               const intensity = total > 0 ? 0.2 + 0.8 * Math.min(total / max, 1) : 0;
               const sel = selected === d.dateStr;
+              const up = upcomingByDay[d.dateStr];
+              const isToday = d.dateStr === today;
               return (
                 <Pressable key={di} onPress={() => setSelected(sel ? null : d.dateStr)}
-                  style={{ flex: 1, aspectRatio: 1, borderRadius: 10, justifyContent: 'center', alignItems: 'center', backgroundColor: total > 0 ? hexAlpha(theme.primary, intensity) : theme.cardAlt, borderWidth: sel ? 2 : 0, borderColor: theme.accent }}>
+                  style={{ flex: 1, aspectRatio: 1, borderRadius: 10, justifyContent: 'center', alignItems: 'center', backgroundColor: total > 0 ? hexAlpha(theme.primary, intensity) : theme.cardAlt,
+                    borderWidth: sel || up || isToday ? 2 : 0, borderStyle: up && !sel ? 'dashed' : 'solid', borderColor: sel ? theme.accent : up ? (up.out >= up.inc ? theme.bad : theme.good) : theme.primary }}>
                   <Text style={{ fontSize: 12, fontWeight: '800', color: intensity > 0.55 ? '#fff' : theme.text }}>{d.dayNum}</Text>
                   {total > 0 && <Text style={{ fontSize: 8, fontWeight: '800', color: intensity > 0.55 ? '#fff' : theme.textSoft }}>₪{Math.round(total)}</Text>}
+                  {!total && up && <Text style={{ fontSize: 8, fontWeight: '800', color: up.out >= up.inc ? theme.bad : theme.good }}>{up.out >= up.inc ? `-₪${Math.round(up.out)}` : `+₪${Math.round(up.inc)}`}</Text>}
                 </Pressable>
               );
             })}
@@ -149,7 +162,12 @@ function DailyTab({ selKey }: { selKey: string }) {
       {day && (
         <Card>
           <Title>{day.label}</Title>
-          {!dayFun.length && !dayReg.length && <Empty>Nothing spent on this day. 🌱</Empty>}
+          {!dayFun.length && !dayReg.length && !upcoming.some(e => e.date === selected) && <Empty>{selected && selected > today ? 'Nothing planned for this day.' : 'Nothing spent on this day. 🌱'}</Empty>}
+          {upcoming.some(e => e.date === selected) && <Heading>📆 Coming up</Heading>}
+          {upcoming.filter(e => e.date === selected).map(e => (
+            <ListRow key={e.key} color={e.amount >= 0 ? theme.chartIncome : theme.bad} title={e.label} subtitle={`${e.detail}${e.source === 'scheduled' ? ' · planned' : ''}`}
+              right={<Text style={{ color: e.amount >= 0 ? theme.good : theme.bad, fontWeight: '800' }}>{e.amount >= 0 ? '+' : ''}{fmt(e.amount)}</Text>} />
+          ))}
           {dayFun.length > 0 && <Heading>🫙 Fun</Heading>}
           {dayFun.map(e => { const c = data.funCategories.find(x => x.key === e.category); return <ListRow key={e.id} color={c?.color} title={c?.label ?? 'Other'} subtitle={e.note || 'No note'} right={<Text style={{ color: theme.text, fontWeight: '800' }}>{fmt(e.amount)}</Text>} />; })}
           {dayReg.length > 0 && <Heading>💳 Regular</Heading>}

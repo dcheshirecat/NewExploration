@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Alert, Platform, useColorScheme } from 'react-native';
 import { LoadingScreen } from './components/LoadingScreen';
-import { applyRecurring, payPeriodBonuses } from './actions';
+import { applyRecurring, applyScheduled, payPeriodBonuses } from './actions';
 import { applyDecay, COINS, earn } from './game';
 import { loadData, saveData } from './storage';
-import { darkTheme, lightTheme, type Theme } from './theme';
+import { makeTheme, type SectionKey, type Theme } from './theme';
 import type { AppData } from './types';
 
 type Updater = (draft: AppData) => void | string | string[];
@@ -21,6 +21,8 @@ type Store = {
   toasts: { id: number; text: string }[];
   /** ticks every second-ish so timers (incubators) re-render */
   now: number;
+  /** which section of the app is showing (sets the pastel colours) */
+  setSection: (s: SectionKey) => void;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -34,6 +36,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [now, setNow] = useState(Date.now());
   const toastId = useRef(0);
   const scheme = useColorScheme();
+  const [section, setSection] = useState<SectionKey>('home');
 
   const toast = useCallback((msg: string | string[]) => {
     const list = (Array.isArray(msg) ? msg : [msg]).filter(Boolean);
@@ -82,6 +85,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
       applyDecay(loaded.game);
       msgs.push(...applyRecurring(loaded));
+      msgs.push(...applyScheduled(loaded));
       msgs.push(...payPeriodBonuses(loaded));
       // keep the loading animation on screen for a moment
       await new Promise(r => setTimeout(r, Math.max(0, 1400 - (Date.now() - started))));
@@ -108,17 +112,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const min = setInterval(() => {
       update(d => {
         applyDecay(d.game);
-        return [...applyRecurring(d), ...payPeriodBonuses(d)];
+        return [...applyRecurring(d), ...applyScheduled(d), ...payPeriodBonuses(d)];
       });
     }, 60000);
     return () => { clearInterval(sec); clearInterval(min); };
   }, [!!data, update]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const mode = data?.settings.theme ?? 'system';
-  const theme = mode === 'dark' || (mode === 'system' && scheme === 'dark') ? darkTheme : lightTheme;
+  const dark = mode === 'dark' || (mode === 'system' && scheme === 'dark');
+  const theme = useMemo(() => makeTheme(dark, section), [dark, section]);
 
   const value = useMemo<Store | null>(() => data ? ({
-    data, ready: true, theme, update, replaceAll, toast, toasts, now,
+    data, ready: true, theme, update, replaceAll, toast, toasts, now, setSection,
   }) : null, [data, theme, update, replaceAll, toast, toasts, now]);
 
   if (!value) return <LoadingScreen theme={theme} />;

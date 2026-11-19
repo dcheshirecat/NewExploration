@@ -10,11 +10,12 @@ tracker) with **PetVault** (a pet game that rewards saving).
 - **Recurring items:** rent, bills, subscriptions and salary are added automatically on their day each month.
 - **Budget warnings:** banners and alerts when a budget or plan reaches 70/80/90% (you choose) or goes over.
 - **Insights:** spending donut by category, month-to-month comparison, daily calendar heatmap, running balance and history (CSV export).
-- **Savings goals:** targets with progress bars, optional target dates with a monthly pace, plus "I skipped a purchase" logging.
-- **Pets:** earn coins by logging, saving, skipping purchases, finishing daily challenges and staying under budget. Spend them on eggs, food and items. Pets get hungry over real time and level up as you save.
+- **Upcoming & future balance:** enter your bank balance, add future charges or income (e.g. a credit card bill on the 10th), and see your projected balance, an upcoming list with the balance after each item, and upcoming items on the calendar. Items are logged automatically on their date.
+- **Savings goals:** targets with progress bars and optional target dates with a monthly pace.
+- **Pets:** animated pixel creatures. Every entry you log earns coins (5 + 1 per ₪50) and pet XP, plus streaks, daily challenges, goals and staying under budget. Spend coins on eggs, food and items. Pets get hungry over real time and level up as you log and save.
 - **Daily reminder:** a notification to log your spending.
 - **Backup & restore:** save everything to a JSON file and restore it on any phone.
-- **Light, dark and automatic themes.**
+- **Pastel rainbow design** with a colour per section, pixel-font titles, and light/dark/automatic modes.
 
 Budget periods run from the **15th to the 14th** of the next month.
 
@@ -47,5 +48,6 @@ Code layout:
 | `src/actions.ts` | Money logic: entries, warnings, recurring items, goals, bonuses |
 | `src/game.ts` | Pet game: pets, eggs, items, coin rules |
 | `src/services.ts` | Backup files and reminder notifications |
-| `src/screens/` | Home, Budget, Insights, Goals, Pets, Settings |
-| `src/components/` | UI kit, charts, jar, pet art, forms |
+| `src/screens/` | Home, Budget (incl. Upcoming), Insights, Goals, Pets, Settings |
+| `src/components/` | UI kit, charts, jar, animated pet sprites, forms |
+| `src/petSprites.ts`, `assets/pets/` | Pet sprite sheets ([credits](assets/pets/CREDITS.md), CC0) |

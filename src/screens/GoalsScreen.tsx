@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { contributeToGoal, goalSaved, logResisted } from '../actions';
+import { contributeToGoal, goalSaved } from '../actions';
 import { DatePicker } from '../components/DatePicker';
 import { Btn, Card, Chip, Empty, Heading, Input, Progress, Row, SmallLink, Stat, Sub, Title, Wrap } from '../components/ui';
-import { coinsForResisting, coinsForSaving } from '../game';
+import { coinsForSaving } from '../game';
 import { GOAL_COLORS } from '../storage';
 import { confirmAction, useStore } from '../store';
+import { PIXEL_FONT } from '../theme';
 import type { Goal } from '../types';
 import { fmt, parseAmount, shortDate, sum, todayStr, uid } from '../utils';
 
@@ -29,8 +30,6 @@ export function GoalsScreen() {
       </Card>
 
       {showForm && <GoalForm onDone={() => setShowForm(false)} />}
-
-      <ResistCard />
 
       {active.length === 0 && !showForm && <Card><Empty>No active goals. Create one to start saving!</Empty></Card>}
       {active.map(g => <GoalCard key={g.id} goal={g} />)}
@@ -143,7 +142,7 @@ function GoalCard({ goal }: { goal: Goal }) {
           <Text style={{ color: theme.text, fontSize: 18, fontWeight: '800' }} numberOfLines={1}>{goal.name}</Text>
           <Text style={{ color: theme.textSoft }}>{fmt(saved)} of {fmt(goal.target)}</Text>
         </View>
-        <Text style={{ color: theme.text, fontSize: 20, fontWeight: '900' }}>{Math.min(100, Math.round(ratio * 100))}%</Text>
+        <Text style={{ color: theme.text, fontSize: 22, fontFamily: PIXEL_FONT }}>{Math.min(100, Math.round(ratio * 100))}%</Text>
       </Row>
       <Progress value={ratio} color={goal.color} height={14} />
       {goal.completedAt ? <Sub>🎉 Reached on {shortDate(goal.completedAt)}!</Sub> : <Sub>{fmt(left)} to go{pace ? ` · ${pace}` : ''}</Sub>}
@@ -169,38 +168,6 @@ function GoalCard({ goal }: { goal: Goal }) {
           <Text style={{ color: c.amount >= 0 ? theme.good : theme.bad, fontWeight: '800' }}>{c.amount >= 0 ? '+' : ''}{fmt(c.amount)}</Text>
         </Row>
       )))}
-    </Card>
-  );
-}
-
-function ResistCard() {
-  const { data, update, theme } = useStore();
-  const [amt, setAmt] = useState('');
-  const [what, setWhat] = useState('');
-  const [goalId, setGoalId] = useState<string | undefined>(undefined);
-  const active = data.goals.filter(g => !g.completedAt);
-  const v = parseAmount(amt);
-  const submit = () => {
-    if (!(v > 0)) return;
-    update(d => logResisted(d, v, what.trim(), goalId));
-    setAmt(''); setWhat('');
-  };
-  return (
-    <Card style={{ borderWidth: 2, borderColor: theme.good }}>
-      <Title>💪 I skipped a purchase!</Title>
-      <Sub>Didn&apos;t buy something you were tempted by? Log what you saved — you earn double coins.</Sub>
-      <Input value={what} onChangeText={setWhat} placeholder="What did you skip? (e.g. bubble tea)" />
-      <Input value={amt} onChangeText={setAmt} keyboardType="decimal-pad" placeholder="How much did it cost? (₪)" />
-      {active.length > 0 && (
-        <>
-          <Heading>Put the money toward a goal?</Heading>
-          <Wrap>
-            <Chip label="No, just log it" active={!goalId} onPress={() => setGoalId(undefined)} />
-            {active.map(g => <Chip key={g.id} label={`${g.emoji} ${g.name}`} active={goalId === g.id} color={g.color} onPress={() => setGoalId(g.id)} />)}
-          </Wrap>
-        </>
-      )}
-      <Btn kind="gold" label={v > 0 ? `Log it · +${coinsForResisting(v)} 🪙` : 'Log it'} onPress={submit} disabled={!(v > 0)} />
     </Card>
   );
 }

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { defaultGame } from './game';
+import { defaultGame, LEGACY_PET_IDS } from './game';
 import type { AppData, Category, MonthData, Settings } from './types';
 import { getMonthKey } from './utils';
 
@@ -45,7 +45,7 @@ export function defaultData(): AppData {
     funCategories: DEFAULT_FUN_CATS,
     regCategories: DEFAULT_REG_CATS,
     months: { [getMonthKey()]: emptyMonth() },
-    goals: [], recurring: [],
+    goals: [], recurring: [], scheduled: [],
     settings: { ...DEFAULT_SETTINGS },
     game: defaultGame(),
   };
@@ -97,9 +97,17 @@ export function normalizeData(p: any): AppData {
     months,
     goals: arr(p.goals).map((g: any) => ({ ...g, contributions: arr(g.contributions) })),
     recurring: arr(p.recurring),
+    scheduled: arr(p.scheduled),
     settings: { ...DEFAULT_SETTINGS, ...(p.settings ?? {}) },
-    game: { ...defaultGame(), ...(p.game ?? {}) },
+    game: normalizeGame(p.game),
   };
+}
+
+function normalizeGame(raw: any) {
+  const g = { ...defaultGame(), ...(raw ?? {}) };
+  g.pets = arr(g.pets).map((pet: any) => ({ ...pet, typeId: LEGACY_PET_IDS[pet.typeId] ?? pet.typeId }));
+  delete (g as any).resistanceXP; delete (g as any).totalResisted; delete (g as any).logRewards;
+  return g;
 }
 
 export async function loadData(): Promise<{ data: AppData; migrated: boolean }> {

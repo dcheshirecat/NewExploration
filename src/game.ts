@@ -4,18 +4,31 @@ import { clamp, todayStr, toLocalDateStr, uid } from './utils';
 // ── Catalogue ────────────────────────────────────────────────────────────────
 export type PetType = { id: string; name: string; rarity: Rarity; baseColor: string; accent: string; element: string };
 
+// Animated pixel creatures (sprites in src/petSprites.ts)
 export const PET_TYPES: PetType[] = [
-  { id: 'fluffox',    name: 'Fluffox',    rarity: 'common', baseColor: '#ff9f43', accent: '#ffeaa7', element: 'fire' },
-  { id: 'aqueel',     name: 'Aqueel',     rarity: 'common', baseColor: '#74b9ff', accent: '#dfe6e9', element: 'water' },
-  { id: 'leafkin',    name: 'Leafkin',    rarity: 'common', baseColor: '#55efc4', accent: '#81ecec', element: 'nature' },
-  { id: 'stonepup',   name: 'Stonepup',   rarity: 'rare',   baseColor: '#b2bec3', accent: '#636e72', element: 'earth' },
-  { id: 'sparkle',    name: 'Sparkle',    rarity: 'rare',   baseColor: '#fd79a8', accent: '#fdcfe8', element: 'light' },
-  { id: 'shadowfin',  name: 'Shadowfin',  rarity: 'rare',   baseColor: '#6c5ce7', accent: '#a29bfe', element: 'shadow' },
-  { id: 'crystalon',  name: 'Crystalon',  rarity: 'epic',   baseColor: '#00cec9', accent: '#81ecec', element: 'ice' },
-  { id: 'emberwing',  name: 'Emberwing',  rarity: 'epic',   baseColor: '#e17055', accent: '#fab1a0', element: 'fire' },
-  { id: 'voidwalker', name: 'Voidwalker', rarity: 'legend', baseColor: '#4b4f63', accent: '#dfe6e9', element: 'void' },
-  { id: 'solaris',    name: 'Solaris',    rarity: 'legend', baseColor: '#fdcb6e', accent: '#fff3c4', element: 'cosmic' },
+  { id: 'chicken',   name: 'Chicken',   rarity: 'common', baseColor: '#ffffff', accent: '#ff6b6b', element: 'farm' },
+  { id: 'duck',      name: 'Duck',      rarity: 'common', baseColor: '#ffd84d', accent: '#ff9f43', element: 'pond' },
+  { id: 'bunny',     name: 'Bunny',     rarity: 'common', baseColor: '#ff9ed2', accent: '#ffd6e8', element: 'meadow' },
+  { id: 'snail',     name: 'Snail',     rarity: 'common', baseColor: '#ff8fc7', accent: '#d9a066', element: 'garden' },
+  { id: 'mushroom',  name: 'Mushroom',  rarity: 'common', baseColor: '#e84a4a', accent: '#ffe0c2', element: 'forest' },
+  { id: 'radish',    name: 'Radish',    rarity: 'common', baseColor: '#ffb3d1', accent: '#7fd36b', element: 'garden' },
+  { id: 'slime',     name: 'Slime',     rarity: 'rare',   baseColor: '#5fd068', accent: '#b8f5bc', element: 'goo' },
+  { id: 'turtle',    name: 'Turtle',    rarity: 'rare',   baseColor: '#3d9be9', accent: '#ff9f43', element: 'sea' },
+  { id: 'bee',       name: 'Bee',       rarity: 'rare',   baseColor: '#ffd84d', accent: '#3a3a3a', element: 'meadow' },
+  { id: 'bluebird',  name: 'Bluebird',  rarity: 'rare',   baseColor: '#3d9be9', accent: '#ffd84d', element: 'sky' },
+  { id: 'angrypig',  name: 'Grumpy Pig', rarity: 'rare',  baseColor: '#6aa84f', accent: '#ff9f9f', element: 'forest' },
+  { id: 'ghost',     name: 'Ghost',     rarity: 'epic',   baseColor: '#bff0ff', accent: '#4fc3f7', element: 'spirit' },
+  { id: 'bat',       name: 'Bat',       rarity: 'epic',   baseColor: '#5a5a6e', accent: '#ff6b9b', element: 'night' },
+  { id: 'fatbird',   name: 'Chonky Bird', rarity: 'epic', baseColor: '#e8892b', accent: '#ffd84d', element: 'sky' },
+  { id: 'chameleon', name: 'Chameleon', rarity: 'legend', baseColor: '#3fbf7f', accent: '#ff7aa8', element: 'jungle' },
+  { id: 'rino',      name: 'Rhino',     rarity: 'legend', baseColor: '#9aa3ad', accent: '#ffffff', element: 'savanna' },
 ];
+
+/** Pets hatched in an earlier version used other creature ids. */
+export const LEGACY_PET_IDS: Record<string, string> = {
+  fluffox: 'chicken', aqueel: 'duck', leafkin: 'radish', stonepup: 'turtle', sparkle: 'bee',
+  shadowfin: 'bat', crystalon: 'ghost', emberwing: 'fatbird', voidwalker: 'chameleon', solaris: 'rino',
+};
 
 export type EggType = { id: string; name: string; price: number; minutes: number; rarities: Rarity[]; color: string; spots: string; accent: string };
 
@@ -46,6 +59,7 @@ export const DAILY_CHALLENGES: Challenge[] = [
   { title: 'Pack a Snack',     desc: 'Bring snacks from home instead of buying',       reward: 25 },
   { title: 'Window Shop Only', desc: 'Browse if you like — but buy nothing',           reward: 40 },
   { title: 'Log Everything',   desc: 'Log every expense you make today',               reward: 40 },
+  { title: 'Plan Ahead',       desc: 'Add an upcoming bill or charge to Upcoming',     reward: 30 },
   { title: 'Use What You Have', desc: 'Craft or cook with supplies you already own',   reward: 45 },
   { title: 'Cart Cooldown',    desc: 'Leave an online cart for 24 hours before buying', reward: 35 },
   { title: 'Free Fun',         desc: 'Do something fun today that costs nothing',      reward: 50 },
@@ -64,12 +78,12 @@ export const PET_ACTIONS = {
 // Coin rules ─────────────────────────────────────────────────────────────────
 export const COINS = {
   welcome: 150,
-  perLog: 3,
-  maxLogRewardsPerDay: 10,
   goalCompleted: 250,
+  logXp: 5,
 };
+/** Every logged entry earns coins: 5, plus 1 for every ₪50 (max 60). */
+export function coinsForLog(amount: number) { return clamp(5 + Math.floor(Math.max(0, amount) / 50), 5, 60); }
 export function coinsForSaving(amount: number) { return clamp(Math.round(amount), 5, 500); }
-export function coinsForResisting(amount: number) { return clamp(Math.round(amount * 2), 5, 600); }
 export function coinsForPeriodBonus(funLeft: number) { return 100 + clamp(Math.round(funLeft / 2), 0, 300); }
 
 export function todaysChallenge(date = new Date()) {
@@ -80,11 +94,10 @@ export function todaysChallenge(date = new Date()) {
 // ── State helpers (mutate a draft) ───────────────────────────────────────────
 export function defaultGame(): GameState {
   return {
-    coins: 0, totalEarned: 0, resistanceXP: 0, totalResisted: 0,
+    coins: 0, totalEarned: 0, totalLogged: 0,
     pets: [], incubating: [], inventory: {}, coinLog: [],
     lastChallengeDay: null,
     streak: { count: 0, lastDay: null, best: 0 },
-    logRewards: { day: null, count: 0 },
     nextPetId: 1, welcomeGiven: false, lastDecayAt: Date.now(),
   };
 }
@@ -110,14 +123,13 @@ export function spend(g: GameState, amount: number, reason: string) {
 }
 
 /**
- * Reward the habit of logging. Returns coins earned (0 once the daily cap is hit)
- * and updates the daily streak.
+ * Reward logging: every entry earns coins (scaled by amount), pets get XP,
+ * and the daily streak is updated.
  */
-export function rewardLogging(g: GameState) {
+export function rewardLogging(g: GameState, amount: number, what: string) {
   const today = todayStr();
-  let coins = 0;
   const messages: string[] = [];
-  // streak
+  let coins = 0;
   if (g.streak.lastDay !== today) {
     const y = new Date(); y.setDate(y.getDate() - 1);
     g.streak.count = g.streak.lastDay === toLocalDateStr(y) ? g.streak.count + 1 : 1;
@@ -126,14 +138,12 @@ export function rewardLogging(g: GameState) {
     if (g.streak.count > 1) {
       const bonus = Math.min(g.streak.count, 7) * 5;
       coins += earn(g, bonus, `${g.streak.count}-day logging streak`);
-      messages.push(`🔥 ${g.streak.count}-day streak! +${bonus}`);
+      messages.push(`🔥 ${g.streak.count}-day streak! +${bonus} 🪙`);
     }
   }
-  if (g.logRewards.day !== today) g.logRewards = { day: today, count: 0 };
-  if (g.logRewards.count < COINS.maxLogRewardsPerDay) {
-    g.logRewards.count += 1;
-    coins += earn(g, COINS.perLog, 'Logged an entry');
-  }
+  g.totalLogged += 1;
+  coins += earn(g, coinsForLog(amount), `Logged ${what}`);
+  messages.push(...giveAllPetsXp(g, COINS.logXp));
   return { coins, messages };
 }
 
@@ -205,7 +215,3 @@ export function applyItem(g: GameState, pet: Pet, item: ShopItem) {
   return checkLevelUp(g, pet);
 }
 
-export function resistanceLevel(xp: number) {
-  const level = Math.floor(xp / 500) + 1;
-  return { level, progress: (xp % 500) / 500, score: Math.floor(xp / 10) };
-}

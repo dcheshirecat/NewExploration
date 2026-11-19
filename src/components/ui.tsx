@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 import { useTheme } from '../store';
-import type { Theme } from '../theme';
+import { PIXEL_FONT, type Theme } from '../theme';
 
 export function useStyles<T extends StyleSheet.NamedStyles<T>>(factory: (t: Theme) => T): T {
   const t = useTheme();
@@ -10,12 +10,12 @@ export function useStyles<T extends StyleSheet.NamedStyles<T>>(factory: (t: Them
 
 const base = (t: Theme) => ({
   card: { backgroundColor: t.card, borderRadius: 24, padding: 18, gap: 12, borderWidth: t.dark ? 1 : 0, borderColor: t.border, shadowColor: '#3b1d7a', shadowOpacity: t.dark ? 0 : 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: t.dark ? 0 : 2 },
-  title: { color: t.text, fontSize: 20, fontWeight: '800' as const },
+  title: { color: t.text, fontSize: 21, fontFamily: PIXEL_FONT, letterSpacing: 0.3 },
   heading: { color: t.text, fontSize: 16, fontWeight: '800' as const },
   sub: { color: t.textSoft, fontSize: 14, lineHeight: 20 },
   input: { minWidth: 0, flexShrink: 1, backgroundColor: t.input, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 13, color: t.text, fontSize: 16 },
-  btn: { flexShrink: 0, backgroundColor: t.primary, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 18, alignItems: 'center' as const, justifyContent: 'center' as const, flexDirection: 'row' as const, gap: 8 },
-  btnText: { color: t.primaryText, fontWeight: '800' as const, fontSize: 16 },
+  btn: { flexShrink: 0, backgroundColor: t.btn, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 18, alignItems: 'center' as const, justifyContent: 'center' as const, flexDirection: 'row' as const, gap: 8 },
+  btnText: { color: t.btnText, fontWeight: '800' as const, fontSize: 16 },
   btnSecondary: { backgroundColor: t.chip },
   btnSecondaryText: { color: t.chipText },
   btnGold: { backgroundColor: t.gold },
@@ -34,9 +34,9 @@ const base = (t: Theme) => ({
   track: { height: 10, borderRadius: 999, backgroundColor: t.chip, overflow: 'hidden' as const },
   seg: { flexDirection: 'row' as const, backgroundColor: t.chip, borderRadius: 999, padding: 4 },
   segItem: { flex: 1, alignItems: 'center' as const, paddingVertical: 9, borderRadius: 999 },
-  segItemActive: { backgroundColor: t.card },
+  segItemActive: { backgroundColor: t.dark ? t.btn : t.card },
   segText: { color: t.textSoft, fontWeight: '700' as const, fontSize: 13 },
-  segTextActive: { color: t.text },
+  segTextActive: { color: t.dark ? t.btnText : t.text },
   listRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12, backgroundColor: t.cardAlt, borderRadius: 18, padding: 12 },
   bar: { width: 8, alignSelf: 'stretch' as const, borderRadius: 999 },
   banner: { borderRadius: 16, padding: 12, flexDirection: 'row' as const, gap: 10, alignItems: 'center' as const },
@@ -95,8 +95,8 @@ export function Chip({ label, active, color, onPress }: { label: string; active?
   const s = useStyles(base);
   const t = useTheme();
   return (
-    <Pressable onPress={onPress} style={[s.chip, active && { backgroundColor: color ?? t.primary }]}>
-      <Text style={[s.chipText, active && { color: '#fff' }]}>{label}</Text>
+    <Pressable onPress={onPress} style={[s.chip, active && { backgroundColor: color ?? t.btn }]}>
+      <Text style={[s.chipText, active && { color: color ? '#fff' : t.btnText }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -111,10 +111,15 @@ export function Wrap({ children }: { children: ReactNode }) {
   return <View style={s.wrap}>{children}</View>;
 }
 
-export function Stat({ label, value, tone }: { label: string; value: string; tone: 'pink' | 'green' | 'yellow' | 'purple' }) {
+export type Tone = 'pink' | 'green' | 'yellow' | 'purple' | 'blue' | 'peach';
+export function toneColor(t: Theme, tone: Tone) {
+  return { pink: t.statPink, green: t.statGreen, yellow: t.statYellow, purple: t.statPurple, blue: t.statBlue, peach: t.statPeach }[tone];
+}
+
+export function Stat({ label, value, tone }: { label: string; value: string; tone: Tone }) {
   const s = useStyles(base);
   const t = useTheme();
-  const bg = tone === 'pink' ? t.statPink : tone === 'green' ? t.statGreen : tone === 'yellow' ? t.statYellow : t.statPurple;
+  const bg = toneColor(t, tone);
   return (
     <View style={[s.stat, { backgroundColor: bg }]}>
       <Text style={s.statLabel}>{label}</Text>

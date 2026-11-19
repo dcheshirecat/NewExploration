@@ -1,3 +1,4 @@
+import { PixelifySans_700Bold, useFonts } from '@expo-google-fonts/pixelify-sans';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
@@ -11,6 +12,8 @@ import { PetsScreen, type PetsTab } from './src/screens/PetsScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { StoreProvider, useStore } from './src/store';
 import { getMonthKey } from './src/utils';
+import { LoadingScreen } from './src/components/LoadingScreen';
+import { lightTheme, PIXEL_FONT } from './src/theme';
 
 type Tab = 'home' | 'budget' | 'insights' | 'goals' | 'pets';
 const TABS: { key: Tab; icon: string; label: string }[] = [
@@ -22,6 +25,8 @@ const TABS: { key: Tab; icon: string; label: string }[] = [
 ];
 
 export default function App() {
+  const [fontsLoaded, fontError] = useFonts({ PixelifySans_700Bold });
+  if (!fontsLoaded && !fontError) return <LoadingScreen theme={lightTheme} />;
   return (
     <SafeAreaProvider>
       <StoreProvider>
@@ -32,7 +37,7 @@ export default function App() {
 }
 
 function Main() {
-  const { theme, data } = useStore();
+  const { theme, data, setSection } = useStore();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('home');
   const [settings, setSettings] = useState(false);
@@ -43,6 +48,7 @@ function Main() {
   const scroll = useRef<ScrollView>(null);
 
   useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [tab, settings, budgetTab, insightsTab, petsTab]);
+  useEffect(() => { setSection(settings ? 'settings' : tab); }, [tab, settings, setSection]);
 
   // Android back button: close settings / go home instead of quitting
   useEffect(() => {
@@ -69,9 +75,9 @@ function Main() {
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
       <StatusBar style={theme.dark ? 'light' : 'dark'} />
       <View style={{ paddingTop: insets.top + 6, paddingHorizontal: 16, paddingBottom: 8, flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bg }}>
-        <Text style={{ flex: 1, color: theme.text, fontSize: 18, fontWeight: '900' }}>Dini&apos;s Money Jar</Text>
+        <Text style={{ flex: 1, color: theme.text, fontSize: 20, fontFamily: PIXEL_FONT }}>Dini&apos;s Money Jar</Text>
         <Pressable onPress={() => go('pets', 'wallet')} style={{ backgroundColor: theme.card, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginRight: 8, borderWidth: 1, borderColor: theme.border }}>
-          <Text style={{ color: theme.text, fontWeight: '800' }}>🪙 {data.game.coins}</Text>
+          <Text style={{ color: theme.text, fontFamily: PIXEL_FONT, fontSize: 15 }}>🪙 {data.game.coins}</Text>
         </Pressable>
         <Pressable accessibilityLabel="Settings" onPress={() => setSettings(s => !s)} style={{ width: 38, height: 38, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: settings ? theme.primary : theme.card, borderWidth: 1, borderColor: theme.border }}>
           <Text style={{ fontSize: 18 }}>⚙️</Text>
@@ -98,7 +104,7 @@ function Main() {
           const dot = t.key === 'pets' && (sadPets || readyEggs);
           return (
             <Pressable key={t.key} accessibilityRole="tab" accessibilityState={{ selected: active }} onPress={() => go(t.key)} style={{ flex: 1, alignItems: 'center', paddingVertical: 4 }}>
-              <View style={{ paddingHorizontal: 16, paddingVertical: 4, borderRadius: 999, backgroundColor: active ? theme.statPurple : 'transparent' }}>
+              <View style={{ paddingHorizontal: 16, paddingVertical: 4, borderRadius: 999, backgroundColor: active ? theme.sections[t.key].accent : 'transparent' }}>
                 <Text style={{ fontSize: 20 }}>{t.icon}</Text>
                 {dot && <View style={{ position: 'absolute', top: 2, right: 10, width: 9, height: 9, borderRadius: 999, backgroundColor: theme.accent }} />}
               </View>

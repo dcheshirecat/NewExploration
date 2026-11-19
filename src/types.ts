@@ -1,8 +1,9 @@
 // ── Money ─────────────────────────────────────────────────────────────────────
 export type Category = { key: string; label: string; color: string };
 
-export type Expense = { id: string; amount: number; category: string; note: string; createdAt: string; recurringId?: string };
-export type IncomeEntry = { id: string; amount: number; source: string; note: string; createdAt: string; recurringId?: string };
+/** createdAt = the date the money moved · loggedAt = when it was entered in the app (used for the bank-balance estimate) */
+export type Expense = { id: string; amount: number; category: string; note: string; createdAt: string; loggedAt?: string; recurringId?: string; scheduledId?: string };
+export type IncomeEntry = { id: string; amount: number; source: string; note: string; createdAt: string; loggedAt?: string; recurringId?: string; scheduledId?: string };
 
 export type MonthData = {
   funBudget: number;
@@ -44,6 +45,19 @@ export type RecurringItem = {
   active: boolean;
 };
 
+/** A one-off future charge or income, e.g. a credit card bill on the 10th. */
+export type ScheduledItem = {
+  id: string;
+  kind: RecurringKind;
+  category: string;
+  amount: number;
+  note: string;
+  date: string; // yyyy-mm-dd
+  postedAt?: string; // set once it has been logged automatically
+};
+
+export type BankBalance = { amount: number; asOf: string };
+
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type Settings = {
   theme: ThemeMode;
@@ -52,6 +66,8 @@ export type Settings = {
   reminderMinute: number;
   /** warn when a budget reaches this share (0-1) */
   warnAt: number;
+  /** real bank balance the forecast starts from */
+  bank?: BankBalance;
 };
 
 // ── Game ──────────────────────────────────────────────────────────────────────
@@ -73,15 +89,13 @@ export type CoinTx = { id: string; type: 'earn' | 'spend'; amount: number; reaso
 export type GameState = {
   coins: number;
   totalEarned: number;
-  resistanceXP: number;
-  totalResisted: number;
+  totalLogged: number;
   pets: Pet[];
   incubating: Incubation[];
   inventory: Record<string, number>;
   coinLog: CoinTx[];
   lastChallengeDay: string | null;
   streak: { count: number; lastDay: string | null; best: number };
-  logRewards: { day: string | null; count: number };
   nextPetId: number;
   welcomeGiven: boolean;
   lastDecayAt: number;
@@ -95,6 +109,7 @@ export type AppData = {
   months: Record<string, MonthData>;
   goals: Goal[];
   recurring: RecurringItem[];
+  scheduled: ScheduledItem[];
   settings: Settings;
   game: GameState;
 };

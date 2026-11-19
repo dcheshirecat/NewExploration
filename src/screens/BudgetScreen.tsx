@@ -9,17 +9,19 @@ import { confirmAction, useStore } from '../store';
 import type { RecurringItem, RecurringKind } from '../types';
 import { daysLeftInPeriod, fmt, getMonthKey, getPeriodLabel, parseAmount, shortDate, sum, uid } from '../utils';
 import { Segmented } from '../components/ui';
+import { UpcomingTab } from './UpcomingTab';
 
-export type BudgetTab = 'jar' | 'life' | 'recurring';
+export type BudgetTab = 'jar' | 'life' | 'upcoming' | 'recurring';
 const QUICK_BUDGETS = [250, 500, 750, 1000, 1500, 2000];
 
 export function BudgetScreen({ selKey, setSelKey, tab, setTab }: { selKey: string; setSelKey: (k: string) => void; tab: BudgetTab; setTab: (t: BudgetTab) => void }) {
   return (
     <View style={{ gap: 14 }}>
-      <Segmented value={tab} onChange={setTab} options={[{ key: 'jar', label: '🫙 Fun Jar' }, { key: 'life', label: '💳 Life' }, { key: 'recurring', label: '🔁 Recurring' }]} />
-      {tab !== 'recurring' && <MonthPicker value={selKey} onChange={setSelKey} />}
+      <Segmented value={tab} onChange={setTab} options={[{ key: 'jar', label: '🫙 Fun' }, { key: 'life', label: '💳 Life' }, { key: 'upcoming', label: '📆 Upcoming' }, { key: 'recurring', label: '🔁 Repeat' }]} />
+      {(tab === 'jar' || tab === 'life') && <MonthPicker value={selKey} onChange={setSelKey} />}
       {tab === 'jar' && <FunJarTab selKey={selKey} />}
       {tab === 'life' && <LifeTab selKey={selKey} />}
+      {tab === 'upcoming' && <UpcomingTab />}
       {tab === 'recurring' && <RecurringTab />}
     </View>
   );

@@ -3,11 +3,14 @@ import { Pressable, Text, View } from 'react-native';
 import { getWarnings, goalSaved } from '../actions';
 import { ExpenseForm, IncomeForm } from '../components/forms';
 import { Jar } from '../components/Jar';
-import { EggArt, PetArt } from '../components/PetArt';
+import { EggArt } from '../components/PetArt';
+import { PetArt } from '../components/PetSprite';
 import { Banner, Btn, Card, Progress, Row, Segmented, Stat, Sub, Title } from '../components/ui';
 import { earn, getMood, todaysChallenge } from '../game';
 import { emptyMonth } from '../storage';
 import { useStore } from '../store';
+import { PIXEL_FONT } from '../theme';
+import { ProjectionSummary } from './UpcomingTab';
 import { daysLeftInPeriod, fmt, getMonthKey, getPeriodLabel, sum, todayStr } from '../utils';
 
 export type Nav = (tab: 'home' | 'budget' | 'insights' | 'goals' | 'pets', sub?: string) => void;
@@ -25,6 +28,7 @@ export function HomeScreen({ go }: { go: Nav }) {
   const challenge = todaysChallenge();
   const claimed = data.game.lastChallengeDay === todayStr();
   const [quick, setQuick] = useState<'fun' | 'reg' | 'income'>('fun');
+  const [poke, setPoke] = useState(0);
   const pet = [...data.game.pets].sort((a, b) => b.level - a.level || b.xp - a.xp)[0];
   const goals = data.goals.filter(g => !g.completedAt).slice(0, 3);
   const hour = new Date().getHours();
@@ -50,13 +54,15 @@ export function HomeScreen({ go }: { go: Nav }) {
 
   return (
     <View style={{ gap: 14 }}>
-      <View style={{ backgroundColor: theme.heroFrom, borderRadius: 28, padding: 20, gap: 6, overflow: 'hidden' }}>
-        <View style={{ position: 'absolute', right: -40, top: -40, width: 180, height: 180, borderRadius: 999, backgroundColor: theme.heroTo, opacity: 0.55 }} />
-        <View style={{ position: 'absolute', right: 40, bottom: -60, width: 120, height: 120, borderRadius: 999, backgroundColor: '#ffd166', opacity: 0.25 }} />
-        <Text style={{ color: '#fff2a8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12 }}>{hello}, Dini</Text>
-        <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', lineHeight: 30 }}>{m.funBudget > 0 ? `${fmt(Math.max(funLeft, 0))} left to have fun with` : 'Set your fun budget to get started ✨'}</Text>
-        <Text style={{ color: 'rgba(255,255,255,0.85)', fontWeight: '600' }}>{getPeriodLabel(mk)} · {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left</Text>
-        <Row style={{ marginTop: 8, gap: 8 }}>
+      <View style={{ backgroundColor: theme.btn, borderRadius: 28, padding: 20, gap: 6, overflow: 'hidden' }}>
+        {/* pastel rainbow bubbles */}
+        <View style={{ position: 'absolute', right: -30, top: -40, width: 150, height: 150, borderRadius: 999, backgroundColor: theme.sections.goals.accent, opacity: 0.9 }} />
+        <View style={{ position: 'absolute', right: 70, bottom: -50, width: 110, height: 110, borderRadius: 999, backgroundColor: theme.sections.budget.accent, opacity: 0.9 }} />
+        <View style={{ position: 'absolute', right: -20, bottom: 20, width: 60, height: 60, borderRadius: 999, backgroundColor: theme.sections.insights.accent, opacity: 0.95 }} />
+        <Text style={{ color: theme.btnText, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12, opacity: 0.8 }}>{hello}, Dini</Text>
+        <Text style={{ color: theme.btnText, fontSize: 26, fontFamily: PIXEL_FONT, lineHeight: 32 }}>{m.funBudget > 0 ? `${fmt(Math.max(funLeft, 0))} left to have fun with` : 'Set your fun budget to get started ✨'}</Text>
+        <Text style={{ color: theme.btnText, fontWeight: '600', opacity: 0.85 }}>{getPeriodLabel(mk)} · {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left</Text>
+        <Row style={{ marginTop: 8, gap: 8, flexWrap: 'wrap' }}>
           <Pill text={`🪙 ${data.game.coins}`} onPress={() => go('pets', 'wallet')} />
           <Pill text={data.game.streak.count ? `🔥 ${data.game.streak.count} day${data.game.streak.count === 1 ? '' : 's'}` : '🔥 Start a streak'} />
           {m.funBudget === 0 && <Pill text="Set budget →" onPress={() => go('budget', 'jar')} />}
@@ -66,6 +72,8 @@ export function HomeScreen({ go }: { go: Nav }) {
       {warnings.slice(0, 3).map(w => (
         <Banner key={w.key} tone={w.level === 'over' ? 'bad' : 'warn'} text={`${w.level === 'over' ? '🚨' : '⚠️'} ${w.text}`} onPress={() => go('budget', w.kind === 'fun' ? 'jar' : 'life')} />
       ))}
+
+      <ProjectionSummary compact onOpen={() => go('budget', 'upcoming')} />
 
       <Card>
         <Title>Quick add</Title>
@@ -89,8 +97,8 @@ export function HomeScreen({ go }: { go: Nav }) {
 
       <Card>
         <Row>
-          <Pressable onPress={() => go('pets', pet ? 'pets' : 'hatch')}>
-            {pet ? <PetArt typeId={pet.typeId} level={pet.level} mood={getMood(pet)} size={92} /> : <EggArt eggId="plain" size={62} />}
+          <Pressable onPress={() => (pet ? setPoke(p => p + 1) : go('pets', 'hatch'))}>
+            {pet ? <PetArt typeId={pet.typeId} level={pet.level} mood={getMood(pet)} size={110} reactKey={poke} /> : <EggArt eggId="plain" size={62} />}
           </Pressable>
           <View style={{ flex: 1, gap: 6 }}>
             <View style={{ backgroundColor: theme.cardAlt, borderRadius: 16, borderTopLeftRadius: 4, padding: 12 }}>
@@ -129,16 +137,16 @@ export function HomeScreen({ go }: { go: Nav }) {
             </Pressable>
           );
         })}
-        <Btn kind="secondary" icon="💪" label="I skipped a purchase" onPress={() => go('goals')} />
       </Card>
     </View>
   );
 }
 
 function Pill({ text, onPress }: { text: string; onPress?: () => void }) {
+  const { theme } = useStore();
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={{ backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }}>
-      <Text style={{ color: '#fff', fontWeight: '800' }}>{text}</Text>
+    <Pressable onPress={onPress} disabled={!onPress} style={{ backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }}>
+      <Text style={{ color: theme.btnText, fontWeight: '800' }}>{text}</Text>
     </Pressable>
   );
 }

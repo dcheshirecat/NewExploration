@@ -1,10 +1,8 @@
 // All functions here mutate a draft copy of AppData and return messages to show.
-import {
-  COINS, coinsForPeriodBonus, coinsForResisting, coinsForSaving, earn, giveAllPetsXp, rewardLogging,
-} from './game';
+import { COINS, coinsForPeriodBonus, coinsForSaving, earn, giveAllPetsXp, rewardLogging } from './game';
 import { emptyMonth } from './storage';
-import type { AppData, Goal, MonthData, RecurringItem } from './types';
-import { dateStrToIso, fmt, getMonthKey, recurringDateInPeriod, shiftMonth, sum, todayStr, uid } from './utils';
+import type { AppData, Goal, MonthData, RecurringItem, RecurringKind, ScheduledItem } from './types';
+import { dateStrToIso, fmt, getMonthKey, periodBounds, recurringDateInPeriod, shiftMonth, sum, toLocalDateStr, todayStr, uid } from './utils';
 
 export type Msgs = string[];
 
@@ -53,18 +51,19 @@ export function addExpense(d: AppData, kind: 'fun' | 'reg', input: { amount: num
   const mk = getMonthKey(new Date(input.date + 'T12:00:00'));
   const before = getWarnings(d, mk);
   const m = ensureMonth(d, mk);
-  const entry = { id: uid(), amount: input.amount, category: input.category, note: input.note.trim(), createdAt: dateStrToIso(input.date) };
+  const entry = { id: uid(), amount: input.amount, category: input.category, note: input.note.trim(), createdAt: dateStrToIso(input.date), loggedAt: new Date().toISOString() };
   if (kind === 'fun') m.funExpenses.unshift(entry); else m.regExpenses.unshift(entry);
-  const r = rewardLogging(d.game);
-  const msgs: Msgs = [`Logged ${fmt(input.amount)}${r.coins ? ` · +${r.coins} 🪙` : ''}`, ...r.messages];
+  const r = rewardLogging(d.game, input.amount, `${fmt(input.amount)} expense`);
+  const msgs: Msgs = [`Logged ${fmt(input.amount)} · +${r.coins} 🪙`, ...r.messages];
   return [...msgs, ...warningDelta(before, getWarnings(d, mk))];
 }
 
 export function addIncome(d: AppData, mk: string, input: { amount: number; source: string; note: string; date?: string }): Msgs {
   const m = ensureMonth(d, mk);
-  m.income.unshift({ id: uid(), amount: input.amount, source: input.source, note: input.note.trim(), createdAt: input.date ? dateStrToIso(input.date) : new Date().toISOString() });
-  const r = rewardLogging(d.game);
-  return [`Income of ${fmt(input.amount)} added${r.coins ? ` · +${r.coins} 🪙` : ''}`, ...r.messages];
+  const now = new Date().toISOString();
+  m.income.unshift({ id: uid(), amount: input.amount, source: input.source, note: input.note.trim(), createdAt: input.date ? dateStrToIso(input.date) : now, loggedAt: now });
+  const r = rewardLogging(d.game, input.amount, `${fmt(input.amount)} income`);
+  return [`Income of ${fmt(input.amount)} added · +${r.coins} 🪙`, ...r.messages];
 }
 
 // ── Recurring ────────────────────────────────────────────────────────────────
@@ -79,10 +78,11 @@ export function applyRecurring(d: AppData, now = new Date()): Msgs {
     const date = recurringDateInPeriod(mk, r.day);
     if (date > today) continue;
     const createdAt = dateStrToIso(date);
+    const loggedAt = new Date().toISOString();
     if (r.kind === 'income') {
-      m.income.unshift({ id: uid(), amount: r.amount, source: r.category, note: r.note || 'Recurring', createdAt, recurringId: r.id });
+      m.income.unshift({ id: uid(), amount: r.amount, source: r.category, note: r.note || 'Recurring', createdAt, loggedAt, recurringId: r.id });
     } else {
-      const e = { id: uid(), amount: r.amount, category: r.category, note: r.note || 'Recurring', createdAt, recurringId: r.id };
+      const e = { id: uid(), amount: r.amount, category: r.category, note: r.note || 'Recurring', createdAt, loggedAt, recurringId: r.id };
       if (r.kind === 'fun') m.funExpenses.unshift(e); else m.regExpenses.unshift(e);
     }
     m.recurringApplied.push(r.id);
@@ -141,18 +141,6 @@ export function contributeToGoal(d: AppData, goalId: string, amount: number, not
   return msgs;
 }
 
-/** "I skipped a purchase" — rewards resisting spending, optionally adds it to a goal. */
-export function logResisted(d: AppData, amount: number, what: string, goalId?: string): Msgs {
-  const gm = d.game;
-  gm.totalResisted += amount;
-  gm.resistanceXP += Math.round(amount * 2);
-  const coins = earn(gm, coinsForResisting(amount), `Skipped ${what || 'a purchase'} (${fmt(amount)})`);
-  const msgs: Msgs = [`💪 Skipped ${what || 'a purchase'} — ${fmt(amount)} saved! +${coins} 🪙`];
-  msgs.push(...giveAllPetsXp(gm, 15));
-  if (goalId) msgs.push(...contributeToGoal(d, goalId, amount, `Skipped: ${what}`, true));
-  return msgs;
-}
-
 /** Goal contributions made inside a period (for the balance view). */
 export function goalContributionsInPeriod(d: AppData, mk: string) {
   const out: { id: string; amount: number; createdAt: string; label: string; note: string }[] = [];
@@ -163,3 +151,115 @@ export function goalContributionsInPeriod(d: AppData, mk: string) {
   }
   return out;
 }
+
+// ── Scheduled (future one-off) items ─────────────────────────────────────────
+export function addScheduled(d: AppData, item: Omit<ScheduledItem, 'id'>): Msgs {
+  d.scheduled.push({ ...item, id: uid() });
+  const r = rewardLogging(d.game, item.amount, `upcoming ${item.note || 'item'}`);
+  const msgs = [`📆 ${item.note || 'Item'} added for ${new Date(item.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · +${r.coins} 🪙`, ...r.messages];
+  return [...msgs, ...applyScheduled(d)];
+}
+
+function postEntry(d: AppData, kind: RecurringKind, category: string, amount: number, note: string, date: string, extra: { scheduledId?: string }) {
+  const m = ensureMonth(d, getMonthKey(new Date(date + 'T12:00:00')));
+  const base = { id: uid(), amount, note, createdAt: dateStrToIso(date), loggedAt: new Date().toISOString(), ...extra };
+  if (kind === 'income') m.income.unshift({ ...base, source: category });
+  else if (kind === 'fun') m.funExpenses.unshift({ ...base, category });
+  else m.regExpenses.unshift({ ...base, category });
+}
+
+/** Logs every scheduled item whose date has arrived. */
+export function applyScheduled(d: AppData): Msgs {
+  const today = todayStr();
+  const posted: string[] = [];
+  for (const it of d.scheduled) {
+    if (it.postedAt || it.date > today) continue;
+    postEntry(d, it.kind, it.category, it.amount, it.note || 'Scheduled', it.date, { scheduledId: it.id });
+    it.postedAt = new Date().toISOString();
+    posted.push(it.note || 'item');
+  }
+  return posted.length ? [`📆 Logged today's ${posted.length === 1 ? `“${posted[0]}”` : `${posted.length} planned items`}`] : [];
+}
+
+/** Log a scheduled item right now (e.g. the card was charged early). */
+export function postScheduledNow(d: AppData, id: string): Msgs {
+  const it = d.scheduled.find(x => x.id === id);
+  if (!it || it.postedAt) return [];
+  postEntry(d, it.kind, it.category, it.amount, it.note || 'Scheduled', todayStr(), { scheduledId: it.id });
+  it.postedAt = new Date().toISOString();
+  return [`✅ ${it.note || 'Item'} logged as paid today`];
+}
+
+// ── Forecast ─────────────────────────────────────────────────────────────────
+export type ForecastEvent = {
+  key: string; date: string; label: string; detail: string; amount: number; kind: RecurringKind;
+  source: 'scheduled' | 'recurring'; sourceId: string; balance: number;
+};
+export type Forecast = {
+  hasBank: boolean;
+  /** estimated balance right now (bank balance + what was logged since) */
+  now: number;
+  events: ForecastEvent[];
+  end: number;
+  endDate: string;
+  lowest: { amount: number; date: string };
+};
+
+function itemLabel(d: AppData, kind: RecurringKind, category: string) {
+  if (kind === 'income') return category;
+  return (kind === 'fun' ? d.funCategories : d.regCategories).find(c => c.key === category)?.label ?? 'Other';
+}
+
+/** Balance right now: the last bank balance you entered plus everything logged after it. */
+export function estimatedBalance(d: AppData) {
+  const bank = d.settings.bank;
+  if (!bank) return null;
+  const asOfDay = toLocalDateStr(bank.asOf);
+  const today = todayStr();
+  let v = bank.amount;
+  for (const m of Object.values(d.months)) {
+    const counts = (e: { loggedAt?: string; createdAt: string }) => !!e.loggedAt && e.loggedAt > bank.asOf && toLocalDateStr(e.createdAt) >= asOfDay && toLocalDateStr(e.createdAt) <= today;
+    v += sum(m.income.filter(counts), e => e.amount);
+    v -= sum(m.funExpenses.filter(counts), e => e.amount);
+    v -= sum(m.regExpenses.filter(counts), e => e.amount);
+  }
+  return v;
+}
+
+/** Everything expected to happen after today, up to and including endDate. */
+export function forecast(d: AppData, endDate: string): Forecast {
+  const today = todayStr();
+  const est = estimatedBalance(d);
+  const start = est ?? 0;
+  const raw: Omit<ForecastEvent, 'balance'>[] = [];
+
+  for (const it of d.scheduled) {
+    if (it.postedAt || it.date < today || it.date > endDate) continue;
+    raw.push({ key: `s-${it.id}`, date: it.date, label: it.note || itemLabel(d, it.kind, it.category), detail: itemLabel(d, it.kind, it.category),
+      amount: it.kind === 'income' ? it.amount : -it.amount, kind: it.kind, source: 'scheduled', sourceId: it.id });
+  }
+  // recurring items in every period between now and endDate that haven't been added yet
+  let pk = getMonthKey();
+  const lastPk = getMonthKey(new Date(endDate + 'T12:00:00'));
+  for (let guard = 0; pk <= lastPk && guard < 24; guard++, pk = shiftMonth(pk, 1)) {
+    const applied = d.months[pk]?.recurringApplied ?? [];
+    for (const r of d.recurring) {
+      if (!r.active || applied.includes(r.id)) continue;
+      const date = recurringDateInPeriod(pk, r.day);
+      if (date <= today || date > endDate) continue;
+      raw.push({ key: `r-${r.id}-${pk}`, date, label: r.note || itemLabel(d, r.kind, r.category), detail: `🔁 ${itemLabel(d, r.kind, r.category)}`,
+        amount: r.kind === 'income' ? r.amount : -r.amount, kind: r.kind, source: 'recurring', sourceId: r.id });
+    }
+  }
+  raw.sort((a, b) => a.date.localeCompare(b.date) || b.amount - a.amount);
+  let bal = start;
+  let lowest = { amount: start, date: today };
+  const events = raw.map(e => {
+    bal += e.amount;
+    if (bal < lowest.amount) lowest = { amount: bal, date: e.date };
+    return { ...e, balance: bal };
+  });
+  return { hasBank: est !== null, now: start, events, end: bal, endDate, lowest };
+}
+
+export function endOfCurrentPeriod() { return toLocalDateStr(periodBounds(getMonthKey()).end); }
